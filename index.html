@@ -1,0 +1,213 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .wrap { padding: 1.5rem; max-width: 420px; margin: 0 auto; font-family: var(--font-sans); }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .brand { font-size: 20px; font-weight: 500; color: #1a6b3c; }
+  .brand-sub { font-size: 12px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .lang-toggle { display: flex; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; }
+  .lang-btn { padding: 5px 12px; font-size: 12px; background: none; border: none; cursor: pointer; color: var(--color-text-secondary); }
+  .lang-btn.active { background: #1a6b3c; color: #fff; }
+
+  .legend { display: flex; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-text-secondary); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dot-ok { background: #1a6b3c; }
+  .dot-removable { background: #c8860a; }
+  .dot-no { background: #b83232; }
+
+  .section-title { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); letter-spacing: 0.07em; text-transform: uppercase; margin: 1.25rem 0 0.5rem; }
+
+  .menu-card {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: 8px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .menu-card:hover { border-color: var(--color-border-secondary); }
+  .menu-card.open { border-color: #1a6b3c; }
+  .menu-row { display: flex; align-items: center; gap: 10px; padding: 13px 16px; }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .menu-name { flex: 1; }
+  .name-ko { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .name-en { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+  .name-en-only { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .price { font-size: 13px; color: var(--color-text-secondary); margin-right: 6px; white-space: nowrap; }
+  .badge { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
+  .badge-ok { background: #eaf3de; color: #27500a; }
+  .badge-removable { background: #faeeda; color: #633806; }
+  .badge-no { background: #fcebeb; color: #791f1f; }
+  .chevron { font-size: 15px; color: var(--color-text-tertiary); transition: transform 0.18s; }
+  .menu-card.open .chevron { transform: rotate(180deg); }
+
+  .menu-detail {
+    display: none;
+    padding: 0 16px 14px;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    margin-top: 0;
+  }
+  .menu-card.open .menu-detail { display: block; }
+  .detail-text { font-size: 13px; color: var(--color-text-secondary); line-height: 1.65; padding-top: 12px; }
+  .detail-tip {
+    margin-top: 10px;
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .tip-icon { color: #c8860a; flex-shrink: 0; font-size: 15px; margin-top: 1px; }
+
+  .footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 0.5px solid var(--color-border-tertiary); font-size: 11px; color: var(--color-text-tertiary); line-height: 1.6; }
+  .powered { text-align: center; margin-top: 1rem; font-size: 11px; color: var(--color-text-tertiary); }
+  .powered span { color: #1a6b3c; font-weight: 500; }
+</style>
+
+<div class="wrap">
+  <h2 class="sr-only">SafeBite Busan — Muslim-friendly menu guide</h2>
+
+  <div class="top-bar">
+    <div>
+      <div class="brand">🍱 분식나라</div>
+      <div class="brand-sub">Muslim-friendly menu · 무슬림 메뉴 안내</div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-ko" onclick="setLang('ko')">한국어</button>
+      <button class="lang-btn" id="btn-en" onclick="setLang('en')">English</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="dot dot-ok"></div> <span data-ko="돼지고기 없음" data-en="Pork-free"></span></div>
+    <div class="legend-item"><div class="dot dot-removable"></div> <span data-ko="제거 가능" data-en="Can remove pork"></span></div>
+    <div class="legend-item"><div class="dot dot-no"></div> <span data-ko="돼지고기 포함" data-en="Contains pork"></span></div>
+  </div>
+
+  <div id="menuContainer"></div>
+
+  <div class="footer" id="footerText"></div>
+  <div class="powered">Powered by <span>SafeBite Busan</span></div>
+</div>
+
+<script>
+let currentLang = 'ko';
+
+const sections = [
+  {
+    titleKo: "면류 · 국물",
+    titleEn: "Noodles & Soup",
+    items: [
+      { ko: "떡볶이", en: "Tteokbokki", price: "5,000", status: "ok",
+        noteKo: "어묵과 고추장 소스로 만든 메뉴입니다. 돼지고기가 들어가지 않습니다.",
+        noteEn: "Made with fish cakes and gochujang sauce. Contains no pork.",
+        tipKo: null, tipEn: null },
+      { ko: "밀면", en: "Milmyeon", price: "8,000", status: "no",
+        noteKo: "육수에 돼지고기(돼지뼈)가 사용됩니다. 무슬림 식단에 적합하지 않을 수 있습니다.",
+        noteEn: "The broth is made with pork bone. May not be suitable for Muslim dietary requirements.",
+        tipKo: null, tipEn: null },
+      { ko: "라면", en: "Ramyeon", price: "4,000", status: "no",
+        noteKo: "스프에 돼지고기 성분이 포함되어 있습니다.",
+        noteEn: "The seasoning packet contains pork-derived ingredients.",
+        tipKo: null, tipEn: null },
+    ]
+  },
+  {
+    titleKo: "간식 · 분식",
+    titleEn: "Snacks & Street Food",
+    items: [
+      { ko: "김밥", en: "Gimbap", price: "3,500", status: "removable",
+        noteKo: "기본 구성에 햄(돼지고기)이 포함되어 있습니다. 주문 시 제거 요청이 가능합니다.",
+        noteEn: "Standard version includes ham (pork). You can request to have it removed when ordering.",
+        tipKo: "직원에게 '돼지고기 빼주세요'라고 말씀해 주세요.",
+        tipEn: "Tell the staff: '돼지고기 빼주세요' (no pork please)" },
+      { ko: "순대", en: "Sundae", price: "4,500", status: "no",
+        noteKo: "돼지 내장으로 만든 메뉴입니다. 무슬림 식단에 적합하지 않습니다.",
+        noteEn: "Made with pork intestines. Not suitable for Muslim dietary requirements.",
+        tipKo: null, tipEn: null },
+      { ko: "튀김 (야채)", en: "Vegetable Fritters", price: "3,000", status: "ok",
+        noteKo: "야채만 사용한 튀김입니다. 돼지고기가 들어가지 않습니다.",
+        noteEn: "Vegetable-only fritters. Contains no pork.",
+        tipKo: null, tipEn: null },
+      { ko: "계란말이", en: "Egg Roll", price: "4,000", status: "ok",
+        noteKo: "계란과 야채로만 만든 메뉴입니다. 돼지고기가 들어가지 않습니다.",
+        noteEn: "Made with eggs and vegetables only. Contains no pork.",
+        tipKo: null, tipEn: null },
+    ]
+  }
+];
+
+const badgeLabels = {
+  ok:        { ko: "돼지 없음", en: "Pork-free" },
+  removable: { ko: "제거 가능", en: "Can remove" },
+  no:        { ko: "돼지 포함", en: "Contains pork" }
+};
+
+const dotClass = { ok: "dot-ok", removable: "dot-removable", no: "dot-no" };
+const badgeClass = { ok: "badge-ok", removable: "badge-removable", no: "badge-no" };
+
+function render() {
+  const container = document.getElementById("menuContainer");
+  container.innerHTML = "";
+  const lang = currentLang;
+
+  sections.forEach(sec => {
+    const title = document.createElement("div");
+    title.className = "section-title";
+    title.textContent = lang === 'ko' ? sec.titleKo : sec.titleEn;
+    container.appendChild(title);
+
+    sec.items.forEach((item, idx) => {
+      const card = document.createElement("div");
+      card.className = "menu-card";
+      const note = lang === 'ko' ? item.noteKo : item.noteEn;
+      const tip = lang === 'ko' ? item.tipKo : item.tipEn;
+      const badge = badgeLabels[item.status][lang];
+      const nameMain = lang === 'ko'
+        ? `<div class="name-ko">${item.ko}</div><div class="name-en">${item.en}</div>`
+        : `<div class="name-en-only">${item.en}</div><div class="name-en" style="font-size:12px">${item.ko}</div>`;
+
+      card.innerHTML = `
+        <div class="menu-row">
+          <div class="status-dot ${dotClass[item.status]}"></div>
+          <div class="menu-name">${nameMain}</div>
+          <div class="price">₩${item.price}</div>
+          <span class="badge ${badgeClass[item.status]}">${badge}</span>
+          <i class="ti ti-chevron-down chevron" aria-hidden="true"></i>
+        </div>
+        <div class="menu-detail">
+          <div class="detail-text">${note}</div>
+          ${tip ? `<div class="detail-tip"><i class="ti ti-info-circle tip-icon" aria-hidden="true"></i><span>${tip}</span></div>` : ''}
+        </div>
+      `;
+      card.addEventListener("click", () => {
+        const isOpen = card.classList.contains("open");
+        container.querySelectorAll(".menu-card").forEach(c => c.classList.remove("open"));
+        if (!isOpen) card.classList.add("open");
+      });
+      container.appendChild(card);
+    });
+  });
+
+  document.getElementById("footerText").textContent = lang === 'ko'
+    ? "* 재료는 조리 상황에 따라 달라질 수 있습니다. 불확실한 경우 직원에게 문의해 주세요."
+    : "* Ingredients may vary depending on preparation. Please ask staff if you are unsure.";
+
+  document.querySelectorAll("[data-ko]").forEach(el => {
+    el.textContent = lang === 'ko' ? el.dataset.ko : el.dataset.en;
+  });
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById("btn-ko").classList.toggle("active", lang === 'ko');
+  document.getElementById("btn-en").classList.toggle("active", lang === 'en');
+  render();
+}
+
+render();
+</script>
